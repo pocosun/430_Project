@@ -5,8 +5,8 @@ var http = require('http'),
 	async = require('async'),
 	discogs = require("disconnect").Client,
 	config = require('./config/config.js'),
-	rovi = require('./rovi.js'),
-	echo = require('./echo.js'),
+	rovi = require('rovijs'),
+	echo = require('echonestjs'),
 	port = process.env.PORT || process.env.NODE_PORT || 3000,
 	index = fs.readFileSync(__dirname + '/../client/index.html');
 
@@ -53,11 +53,15 @@ var findSimilar = function(data, callback){
 //Find Images for artist using discogs
 //Currently only logs images
 var findPhoto = function(data, callback){
-	db.search('Katy Perry', {'type': 'artist'}, function(err, data){
-		//console.log(data.results[0]);
+	db.search(data, {'type': 'artist'}, function(err, data){
 
 		db.artist(data.results[0].id, function(err, data2) {
-		   console.log(data2.images); 
+		   if(err){
+			console.log(err);
+			}
+			else{
+				callback(null, data2.images[0].resource_url);
+			}
 		}); 
 	});		
 };
@@ -114,10 +118,10 @@ var makePackage = function(data, socket){
 			firstImg: function(callback){
 				findPhoto(data.first, callback);
 			},
-			/*secondImg: function(callback){
+			secondImg: function(callback){
 				findPhoto(data.second, callback);
 			},
-*/			firstInflu: function(callback){
+			firstInflu: function(callback){
 				findInflu(data.first, callback);
 			},
 			secondInflu: function(callback){
@@ -130,8 +134,8 @@ var makePackage = function(data, socket){
 		function(err, results){
 			dataPackage.first.video.push({'url': results.firstVideo});
 			dataPackage.second.video.push({'url':results.secondVideo});
-			//dataPackage.first.images.push({'url':results.firstImg});
-			//dataPackage.second.images.push({'url':results.secondImg});
+			dataPackage.first.images.push({'url':results.firstImg});
+			dataPackage.second.images.push({'url':results.secondImg});
 			dataPackage.first.influencers.push({'name':results.firstInflu});
 			dataPackage.second.influencers.push({'name':results.secondInflu});
 
@@ -140,21 +144,21 @@ var makePackage = function(data, socket){
 					similarVideo: function(callback){
 						findVideo(results.similar.name, callback);
 					},
-					/*similarImg: function(callback){
+					similarImg: function(callback){
 						findPhoto(results.similar.name, callback);
-					},*/
+					},
 					similarInflu: function(callback){
 						findInflu(results.similar.name, callback);
 					}
 				},
 				function(err,results){
 					dataPackage.similar.video.push({'url': results.similarVideo});
-					//dataPackage.similar.images.push({'url':results.similarImg});
+					dataPackage.similar.images.push({'url':results.similarImg});
 					dataPackage.similar.influencers.push({'name':results.similarInflu});
 
-					console.log(dataPackage.similar);
+					console.log(dataPackage);
 
-					socket.emit('package', dataPackage);
+					//socket.emit('package', dataPackage);
 				}
 			);
 		}
@@ -165,6 +169,7 @@ var makePackage = function(data, socket){
 var onJoined = function(socket){
 	var msg = "Hey";
 	socket.emit('init', msg);
+	makePackage({'first': 'Beach Boys', 'second': 'Spice Girls'}, socket);
 
 	//Make the package
 	socket.on('serverArtist', function(data){
