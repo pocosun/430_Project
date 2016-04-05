@@ -1,0 +1,83 @@
+<!--Very very basic html simply for testing-->
+<html>
+	<head>
+		<title> API Tests </title>
+
+		<script src="socket.io/socket.io.js"></script>	
+		<script>
+			var socket, firstArtist, secondArtist, submitBtn;
+
+			//What to do on artist submission
+			var sumbitArtist = function(){
+				//get values
+				firstArtist = document.querySelector('#firstArtist').value;
+				secondArtist = document.querySelector('#secondArtist').value;
+
+				//send artist to server and confirm
+				if(firstArtist && secondArtist){
+					socket.emit('serverArtist', {first: firstArtist, second: secondArtist});
+					console.log('sent');
+				}
+			}
+
+			//init on window.load
+			var init = function(){
+				socket = io.connect();
+				socket.emit('join');
+
+				submitBtn = document.querySelector('#submitBtn');
+				submitBtn.addEventListener('click', sumbitArtist)
+
+				//Confirm connection
+				socket.on('init', function(data){
+					console.log(data);
+				})
+
+				//upon recieving a JSON package, unwrap and update tags
+				socket.on('package', function(data){
+					var fImage = document.getElementById('fImage');
+					var fVideo = document.getElementById('fVideo');
+					var influ = document.getElementById('influ');
+
+					console.log(data);
+
+					fImage.src = data.first.images[0].url;
+					fVideo.src = data.first.video[0].url;
+					influ.innerHTML = data.first.influencers[0].name;
+
+					sImage.src = data.second.images[0].url;
+					sVideo.src = data.second.video[0].url;
+					sinflu.innerHTML = data.second.influencers[0].name;
+
+
+				})
+
+			}
+
+			window.onload = init;
+		</script>
+
+	</head>
+
+	<body>
+		<span>Select an Artist <input type="text" id="firstArtist"></span><br><br>
+		<span>Select an Artist <input type="text" id="secondArtist"></span><br>
+		<button id="submitBtn" type="button">Submit!</button>
+		<br><br>
+		
+		<div style="float:left; display:inline-block;">
+			<img id="fImage"></img>
+			<br>
+			<iframe id="fVideo" width="480" height="390" frameborder="0"></iframe>
+			<br>
+			<p id="influ"></p>
+		</div>
+
+		<div style="float:right; display:inline-block;">
+			<img id="sImage"></img>
+			<br>
+			<iframe id="sVideo" width="480" height="390" frameborder="0"></iframe>
+			<br>
+			<p id="sinflu"></p>
+		</div>
+</html>
